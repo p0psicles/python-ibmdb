@@ -124,7 +124,7 @@ class DB2CursorWrapper( Database.Cursor ):
             raise StopIteration
         return row
     
-    def _format_parameters( self, parameters ):
+    def _format_parameters( self, parameters, operation ):
         parameters = list( parameters )
         for index in range( len( parameters ) ):
             # With raw SQL queries, datetimes can reach this function
@@ -139,6 +139,11 @@ class DB2CursorWrapper( Database.Cursor ):
                     param = timezone.make_aware( param, default_timezone )
                 param = param.astimezone(timezone.utc).replace(tzinfo=None)
                 parameters[index] = param
+            if ((settings.CASE_INSENSITIVE_SEARCH if hasattr(settings, 'CASE_INSENSITIVE_SEARCH') else None) and 
+                    ( isinstance(parameters[index], (unicode, str))) and operation.startswith('SELECT') and
+                    operation.count("LIKE ?") == len(parameters)):
+                param = parameters[index].upper()
+                parameters[index] = param
         return tuple( parameters )
                 
     # Over-riding this method to modify SQLs which contains format parameter to qmark. 
@@ -151,7 +156,7 @@ class DB2CursorWrapper( Database.Cursor ):
             if operation.count( "%s" ) > 0:
                 operation = operation % ( tuple( "?" * operation.count( "%s" ) ) )
             if ( djangoVersion[0:2] >= ( 1, 4 ) ):
-                parameters = self._format_parameters( parameters )
+                parameters = self._format_parameters( parameters, operation )
                 
             if ( djangoVersion[0:2] <= ( 1, 1 ) ):
                 return super( DB2CursorWrapper, self ).execute( operation, parameters )

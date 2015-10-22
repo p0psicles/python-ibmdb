@@ -259,7 +259,7 @@ class DatabaseOperations ( BaseDatabaseOperations ):
         
     # Function to quote the name of schema, table and column.
     def quote_name( self, name ):
-        name = name.upper()
+        #name = name.upper()
         if( name.startswith( "\"" ) & name.endswith( "\"" ) ):
             return name
         
